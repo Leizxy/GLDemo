@@ -45,4 +45,6 @@ class MainActivity : AppCompatActivity() {
     fun changeFour(view: View) {
         gl.changeFilter(4)
     }
+
+    fun changeCamera(view: View) {}
 }

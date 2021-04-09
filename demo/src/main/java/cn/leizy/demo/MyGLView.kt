@@ -29,7 +29,6 @@ class MyGLView : GLSurfaceView {
     }
 
     fun changeFilter(id: Int) {
-//        setRenderer(FilterRender(this, id))
         filterRender.changeFilter(id)
     }
 }
@@ -38,13 +37,14 @@ class FilterRender(private val glView: MyGLView, private val id: Int = R.raw.cam
     GLSurfaceView.Renderer,
     Preview.OnPreviewOutputUpdateListener,
     SurfaceTexture.OnFrameAvailableListener {
+    private var cameraHelper: CameraHelper
     private var cameraTexture: SurfaceTexture? = null
     private var textures: IntArray = IntArray(1)
     private lateinit var screenFilter: ScreenFilter
     private val mtx = FloatArray(16)
 
     init {
-        CameraHelper(glView.context as LifecycleOwner, this)
+        cameraHelper = CameraHelper(glView.context as LifecycleOwner, this)
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
