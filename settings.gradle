@@ -1,0 +1,4 @@
+include ':gldemo2'
+include ':demo'
+include ':app'
+rootProject.name = "GLDemo"
