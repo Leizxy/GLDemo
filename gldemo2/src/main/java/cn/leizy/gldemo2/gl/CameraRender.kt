@@ -3,7 +3,10 @@ package cn.leizy.gldemo2.gl
 import android.graphics.SurfaceTexture
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.util.Log
+import cn.leizy.gldemo2.R
 import cn.leizy.gldemo2.camera.CameraHelper
+import cn.leizy.gldemo2.gl.filter.ScreenFilter
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -147,38 +150,64 @@ class CameraTexture {
 
 class CameraRender(private val glView: GLSurfaceView, private val cameraHelper: CameraHelper) :
     GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
+    private val mtx = FloatArray(16)
+    lateinit var screenFilter: ScreenFilter
+    private var isBackState: Boolean = false
     private var textureId: Int = 0
     var surfaceTexture: SurfaceTexture? = null
 
-    lateinit var cameraTexture: CameraTexture
+    private lateinit var cameraTexture: CameraTexture
 
-    init {
-    }
+    private var preState = cameraHelper.isFront()
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+        Log.i("CameraRender", "onSurfaceCreated: ")
         cameraTexture = CameraTexture()
         surfaceTexture = cameraTexture.surfaceTexture
         surfaceTexture?.setOnFrameAvailableListener(this)
 
         cameraHelper.addSurfaceTexture(surfaceTexture!!)
 //        cameraHelper.startPreview()
+        screenFilter = ScreenFilter(glView.context, R.raw.camera_filters)
 
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
+        screenFilter.setSize(width, height)
     }
 
     override fun onDrawFrame(gl: GL10?) {
-        GLES20.glClearColor(0f, 0f, 0f, 0f)
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
-        surfaceTexture?.updateTexImage()
+//        GLES20.glClearColor(0f, 0f, 0f, 0f)
+//        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
         if (this::cameraTexture.isInitialized) {
-            cameraTexture.draw(true)
+            surfaceTexture?.updateTexImage()
+            if (preState == cameraHelper.isFront()) {
+                cameraTexture.draw(cameraHelper.isFront())
+            } else {
+                preState = cameraHelper.isFront()
+            }
+            surfaceTexture?.getTransformMatrix(mtx)
+            screenFilter.setTransformMatrix(mtx)
+            screenFilter.onDraw(cameraTexture.textureId[0])
         }
     }
 
     override fun onFrameAvailable(surfaceTexture: SurfaceTexture?) {
+        if (isBackState) return
         glView.requestRender()
+    }
+
+    fun onResume() {
+        isBackState = false
+    }
+
+    fun onStop() {
+        isBackState = true
+    }
+
+    fun addFilter(screenFilter: ScreenFilter) {
+        Log.i("CameraRender", "addFilter: ")
+        this.screenFilter = screenFilter
     }
 }

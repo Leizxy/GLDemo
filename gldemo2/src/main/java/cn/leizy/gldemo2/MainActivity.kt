@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.View
 import cn.leizy.gldemo2.camera.CameraHelper
 import cn.leizy.gldemo2.gl.GLView
 
@@ -53,5 +54,19 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         glView.onPause()
+    }
+
+    fun changeCamera(view: View) {
+        glView.switchCamera()
+        glView.changeScreenFilter(0)
+    }
+
+    fun changeFilter(view: View) {
+        when(view.id){
+            R.id.btn1 -> glView.changeScreenFilter(1)
+            R.id.btn2 -> glView.changeScreenFilter(2)
+            R.id.btn3 -> glView.changeScreenFilter(3)
+            R.id.btn4 -> glView.changeScreenFilter(4)
+        }
     }
 }

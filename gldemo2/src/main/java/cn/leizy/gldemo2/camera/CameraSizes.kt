@@ -2,6 +2,7 @@ package cn.leizy.gldemo2.camera
 
 import android.graphics.Point
 import android.hardware.camera2.CameraCharacteristics
+import android.util.Log
 import android.util.Size
 import android.view.Display
 import android.view.SurfaceHolder

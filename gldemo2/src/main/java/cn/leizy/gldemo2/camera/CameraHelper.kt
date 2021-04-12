@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
-import android.media.MediaRecorder
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
@@ -13,6 +12,7 @@ import android.view.Surface
 import android.view.View
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import cn.leizy.gldemo2.gl.GLView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -26,11 +26,15 @@ import kotlin.coroutines.suspendCoroutine
  * @date 4/10/21
  * @description
  */
-data class CameraInfo(val cameraId: String, val size: Size)
+data class CameraInfo(val cameraId: String, val size: Size, val isFront: Boolean)
 
-class CameraHelper(private val view: View) {
-    private var havePreviewing: Boolean = false
+class CameraHelper(private val view: GLView) {
+    private var camera: CameraDevice? = null
+
+    //    private var havePreviewing: Boolean = false
+    private var isFrontCameraPreview: Boolean = true
     private var previewOutputSize: Size? = null
+    private var curCamera: CameraInfo? = null
     private var targetSurfaces = arrayListOf<Surface>()
     private var previewSurface: Surface? = null
     private var surfaceTexture: SurfaceTexture? = null
@@ -45,7 +49,8 @@ class CameraHelper(private val view: View) {
 
     init {
         cameraManager = view.context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-        cameraManager.cameraIdList.forEach {
+        findCameraId()
+        /*cameraManager.cameraIdList.forEach {
             val cameraCharacteristics = cameraManager.getCameraCharacteristics(it)
             val orientation =
                 lensOrientationString(cameraCharacteristics[CameraCharacteristics.LENS_FACING]!!)
@@ -53,26 +58,43 @@ class CameraHelper(private val view: View) {
                 cameraCharacteristics[CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES]!!
             val cameraConfig =
                 cameraCharacteristics[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]!!
-
+            val isFront =
+                cameraCharacteristics[CameraCharacteristics.LENS_FACING] == CameraCharacteristics.LENS_FACING_FRONT
             if (capabilities.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE)) {
                 cameraConfig.getOutputSizes(MediaRecorder::class.java).forEach { size ->
                     Log.i("CameraHelper", "info : Camera $it $orientation ($size)")
-                    cameraList.add(CameraInfo(it, size))
+//                    cameraList.add(CameraInfo(it, size, isFront))
                 }
             }
-        }
+        }*/
 
-        view.post {
-            previewOutputSize = getPreviewOutputSize(
-                view.display,
-                cameraManager.getCameraCharacteristics(cameraId),
-                SurfaceTexture::class.java
-            )
-//            initializeCamera(view.context as LifecycleOwner)
+        view.post { findBestSize() }
+    }
+
+    private fun findBestSize() {
+        previewOutputSize = getPreviewOutputSize(
+            view.display,
+            cameraManager.getCameraCharacteristics(cameraId),
+            SurfaceTexture::class.java
+        ).also {
+            view.setAspectRatio(it)
+        }
+        Log.i("CameraHelper", "findBestSize: $previewOutputSize")
+    }
+
+    private fun findCameraId() {
+        for (id in cameraManager.cameraIdList) {
+            val characteristics = cameraManager.getCameraCharacteristics(id)
+            val typeId =
+                if (isFrontCameraPreview) CameraCharacteristics.LENS_FACING_FRONT else CameraCharacteristics.LENS_FACING_BACK
+            if (characteristics[CameraCharacteristics.LENS_FACING] == typeId) {
+                cameraId = id
+                break
+            }
         }
     }
 
-    private inline fun lensOrientationString(value: Int) = when (value) {
+    private fun lensOrientationString(value: Int) = when (value) {
         CameraCharacteristics.LENS_FACING_BACK -> "Back"
         CameraCharacteristics.LENS_FACING_FRONT -> "Front"
         CameraCharacteristics.LENS_FACING_EXTERNAL -> "External"
@@ -82,25 +104,26 @@ class CameraHelper(private val view: View) {
 
     private fun initializeCamera(lifecycleOwner: LifecycleOwner) =
         lifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-            val camera: CameraDevice = openCamera(cameraManager, cameraId, cameraHandler)
-            //先判断是否有surfacetexture，若有创建一个surface用于渲染
-            surfaceTexture?.apply {
-                previewOutputSize?.also {
-                    Log.i("CameraHelper", "setSurfaceTexture: ${it.width} * ${it.height}")
-                    setDefaultBufferSize(it.width, it.height)
-                    previewSurface = Surface(surfaceTexture).also { s ->
-                        targetSurfaces.add(s)
+            camera = openCamera(cameraManager, cameraId, cameraHandler).also {
+                //先判断是否有surfacetexture，若有创建一个surface用于渲染
+                surfaceTexture?.apply {
+                    previewOutputSize?.also {
+                        Log.i("CameraHelper", "setSurfaceTexture: ${it.width} * ${it.height}")
+                        setDefaultBufferSize(it.width, it.height)
+                        previewSurface = Surface(surfaceTexture).also { s ->
+                            targetSurfaces.add(s)
+                        }
                     }
                 }
-            }
-            if (targetSurfaces.isNotEmpty()) {
-                session = createCaptureSession(camera, cameraHandler)
-                captureRequest = previewSurface?.let {
-                    val build = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-                    build.addTarget(it)
-                    build.build()
+                if (targetSurfaces.isNotEmpty()) {
+                    session = createCaptureSession(it, cameraHandler)
+                    captureRequest = previewSurface?.let { surface ->
+                        val build = it.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+                        build.addTarget(surface)
+                        build.build()
+                    }
+                    startPreview()
                 }
-                startPreview()
             }
         }
 
@@ -112,12 +135,12 @@ class CameraHelper(private val view: View) {
             targetSurfaces,
             object : CameraCaptureSession.StateCallback() {
                 override fun onConfigured(session: CameraCaptureSession) {
-                    Log.i("CameraHelper", "onConfigured: ")
+                    Log.i("CameraHelper", "onConfigured: ${session.device.id}")
                     it.resume(session)
                 }
 
                 override fun onConfigureFailed(session: CameraCaptureSession) {
-                    Log.i("CameraHelper", "onConfigureFailed: ")
+                    Log.i("CameraHelper", "onConfigureFailed: ${session.device.id}")
                     it.resumeWithException(RuntimeException(""))
                 }
             },
@@ -125,11 +148,11 @@ class CameraHelper(private val view: View) {
         )
     }
 
-    fun startPreview() {
+    private fun startPreview() {
         Log.i("CameraHelper", "startPreview: $captureRequest")
         Log.i("CameraHelper", "startPreview: $session")
         captureRequest?.let {
-            havePreviewing = true
+//            havePreviewing = true
             session?.setRepeatingRequest(it, null, cameraHandler)
         }
     }
@@ -145,7 +168,7 @@ class CameraHelper(private val view: View) {
     ): CameraDevice = suspendCancellableCoroutine { cont ->
         manager.openCamera(cameraId, object : CameraDevice.StateCallback() {
             override fun onOpened(camera: CameraDevice) {
-                Log.i("CameraHelper", "onOpened: ")
+                Log.i("CameraHelper", "onOpened: ${camera.id}")
                 cont.resume(camera)
             }
 
@@ -154,7 +177,6 @@ class CameraHelper(private val view: View) {
             }
 
             override fun onError(camera: CameraDevice, error: Int) {
-                Log.i("CameraHelper", "onError: ")
                 when (error) {
                     ERROR_CAMERA_DEVICE -> "Error device"
                     ERROR_CAMERA_DISABLED -> "Device disabled"
@@ -163,6 +185,7 @@ class CameraHelper(private val view: View) {
                     ERROR_MAX_CAMERAS_IN_USE -> "maximum cameras in use"
                     else -> "UNKNOW"
                 }.also {
+                    Log.i("CameraHelper", "onError: $it")
                     if (cont.isActive)
                         cont.resumeWithException(RuntimeException("Camera $cameraId error: ($error) $it").also { e -> e.printStackTrace() })
                 }
@@ -181,20 +204,65 @@ class CameraHelper(private val view: View) {
     }
 
     fun onResume() {
-        if (havePreviewing)
-            session?.setRepeatingRequest(captureRequest!!, null, cameraHandler)
+//        if (havePreviewing)
+//            session?.setRepeatingRequest(captureRequest!!, null, cameraHandler)
+//        resume()
     }
 
-    fun onStop() {
-        if (havePreviewing) {
-            Log.i("CameraHelper", "onPause: ")
-//            session?.abortCaptures()
-            session?.stopRepeating()
+    private fun resume() {
+        if (targetSurfaces.isNotEmpty()) {
+            (view.context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
+                camera = openCamera(cameraManager, cameraId, cameraHandler).also {
+                    session = createCaptureSession(it, cameraHandler)
+                    captureRequest = previewSurface?.let { surface ->
+                        val build = it.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+                        build.addTarget(surface)
+                        build.build()
+                    }
+                    startPreview()
+                }
+            }
         }
     }
 
+    fun onStop() {
+        Log.i("CameraHelper", "onStop: ")
+//        session?.stopRepeating()
+        camera?.close()
+//        session?.close()
+    }
+
     fun onDestroy() {
+        cameraThread.quitSafely()
         previewSurface?.release()
+    }
+
+    fun switchCamera() {
+        session?.device?.close()
+        session?.close()
+        isFrontCameraPreview = !isFrontCameraPreview
+        switch(view.context as LifecycleOwner)
+    }
+
+    private fun switch(lifecycleOwner: LifecycleOwner) =
+        lifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+            findCameraId()
+            findBestSize()
+            camera = openCamera(cameraManager, cameraId, cameraHandler).also {
+                if (targetSurfaces.isNotEmpty()) {
+                    session = createCaptureSession(it, cameraHandler)
+                    captureRequest = previewSurface?.let { surface ->
+                        val build = it.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+                        build.addTarget(surface)
+                        build.build()
+                    }
+                    startPreview()
+                }
+            }
+        }
+
+    fun isFront(): Boolean {
+        return isFrontCameraPreview
     }
 
 }
