@@ -5,8 +5,6 @@ import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.util.Log
 import android.util.Size
-import android.view.SurfaceHolder
-import cn.leizy.gldemo2.R
 import cn.leizy.gldemo2.camera.CameraHelper
 import cn.leizy.gldemo2.gl.filter.ScreenFilter
 import kotlin.math.roundToInt
@@ -27,14 +25,14 @@ class GLView constructor(context: Context, attributes: AttributeSet) :
     fun startPreview() {
         setEGLContextClientVersion(2)
         cameraRender = CameraRender(this, cameraHelper)
-//        screenFilter = ScreenFilter(context, R.raw.camera_filters)
-//        cameraRender.addFilter(screenFilter)
+        screenFilter = ScreenFilter(context)
+        cameraRender.addFilter(screenFilter)
         setRenderer(cameraRender)
         renderMode = RENDERMODE_WHEN_DIRTY
     }
 
     fun changeScreenFilter(id: Int) {
-        cameraRender.screenFilter.changeFilter(id)
+        screenFilter.changeFilter(id)
     }
 
     override fun onResume() {
