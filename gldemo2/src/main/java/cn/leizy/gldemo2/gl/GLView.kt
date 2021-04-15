@@ -7,6 +7,7 @@ import android.util.Log
 import android.util.Size
 import cn.leizy.gldemo2.camera.CameraHelper
 import cn.leizy.gldemo2.gl.filter.ScreenFilter
+import cn.leizy.gldemo2.gl.filter.SplitFilter
 import kotlin.math.roundToInt
 
 /**
@@ -27,6 +28,7 @@ class GLView constructor(context: Context, attributes: AttributeSet) :
         cameraRender = CameraRender(this, cameraHelper)
         screenFilter = ScreenFilter(context)
         cameraRender.addFilter(screenFilter)
+        cameraRender.addFilter(SplitFilter(context))
         setRenderer(cameraRender)
         renderMode = RENDERMODE_WHEN_DIRTY
     }

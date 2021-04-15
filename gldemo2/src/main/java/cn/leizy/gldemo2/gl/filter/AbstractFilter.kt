@@ -41,6 +41,7 @@ abstract class AbstractFilter(private val context: Context, private val vertexSh
     var vTexture: Int = 0
 
     init {
+        Log.i("AbstractFilter", "init{}")
         ByteBuffer.allocateDirect(4 * 4 * 2)
             .order(ByteOrder.nativeOrder()).asFloatBuffer().also {
                 it.put(VERTEX)
@@ -80,8 +81,8 @@ abstract class AbstractFilter(private val context: Context, private val vertexSh
 
 
     //渲染
-    fun onDraw(texture: Int) {
-        if (program == 0) return
+    open fun onDraw(texture: Int): Int {
+        if (program == 0) return 0
         //大小
         GLES20.glViewport(0, 0, mWidth, mHeight)
         //使用程序
@@ -105,11 +106,12 @@ abstract class AbstractFilter(private val context: Context, private val vertexSh
 //        GLES20.glUniformMatrix4fv(vMatrix, 1, false, mtx, 0)
 //        GLES20.glUniform1i(typeHandle, type)
 //        Log.i("ScreenFilter", "onDraw: $type")
-        beforeDraw()
+        beforeDraw(texture)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        return texture
     }
 
-    open fun beforeDraw() {
+    open fun beforeDraw(texture: Int) {
 
     }
 

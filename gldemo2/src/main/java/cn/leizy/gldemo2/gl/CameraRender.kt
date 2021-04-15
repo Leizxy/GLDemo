@@ -6,6 +6,7 @@ import android.opengl.GLSurfaceView
 import android.util.Log
 import cn.leizy.gldemo2.R
 import cn.leizy.gldemo2.camera.CameraHelper
+import cn.leizy.gldemo2.gl.filter.AbstractFboFilter
 import cn.leizy.gldemo2.gl.filter.AbstractFilter
 import cn.leizy.gldemo2.gl.filter.ScreenFilter
 import java.nio.ByteBuffer
@@ -179,24 +180,32 @@ class CameraRender(private val glView: GLSurfaceView, private val cameraHelper: 
         GLES20.glViewport(0, 0, width, height)
 //        screenFilter.setSize(width, height)
         filters.forEach {
+            Log.i("CameraRender", "onSurfaceChanged: $it")
             it.setSize(width, height)
         }
     }
 
     override fun onDrawFrame(gl: GL10?) {
-//        GLES20.glClearColor(0f, 0f, 0f, 0f)
-//        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
         if (this::cameraTexture.isInitialized) {
             surfaceTexture?.updateTexImage()
             if (preState == cameraHelper.isFront()) {
                 cameraTexture.draw(cameraHelper.isFront())
             } else {
+                GLES20.glClearColor(0f, 0f, 0f, 0f)
+                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
                 preState = cameraHelper.isFront()
             }
             surfaceTexture?.getTransformMatrix(mtx)
+            var id = cameraTexture.textureId[0]
             filters.forEach {
-                it.setTransformMatrix(mtx)
-                it.onDraw(cameraTexture.textureId[0])
+                if (it is ScreenFilter) {
+                    it.setTransformMatrix(mtx)
+                }
+                if (it is AbstractFboFilter) {
+                    id = it.onDraw(id)
+                } else {
+                    it.onDraw(id)
+                }
             }
 //            screenFilter.setTransformMatrix(mtx)
 //            screenFilter.onDraw(cameraTexture.textureId[0])
