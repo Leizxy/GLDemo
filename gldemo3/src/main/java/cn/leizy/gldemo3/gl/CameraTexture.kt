@@ -1,23 +1,14 @@
-package cn.leizy.gldemo2.gl
+package cn.leizy.gldemo3.gl
 
 import android.graphics.SurfaceTexture
 import android.opengl.GLES20
-import android.opengl.GLSurfaceView
-import android.util.Log
-import cn.leizy.gldemo2.R
-import cn.leizy.gldemo2.camera.CameraHelper
-import cn.leizy.gldemo2.gl.filter.AbstractFboFilter
-import cn.leizy.gldemo2.gl.filter.AbstractFilter
-import cn.leizy.gldemo2.gl.filter.ScreenFilter
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
-import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL10
 
 /**
- * @author wulei
- * @date 4/10/21
+ * @author Created by wulei
+ * @date 2021/4/15, 015
  * @description
  */
 
@@ -146,94 +137,5 @@ class CameraTexture {
         GLES20.glDisableVertexAttribArray(positionHandle)
         GLES20.glDisableVertexAttribArray(textureHandle)
 
-    }
-}
-
-
-class CameraRender(private val glView: GLSurfaceView, private val cameraHelper: CameraHelper) :
-    GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
-    private val mtx = FloatArray(16)
-    private var isBackState: Boolean = false
-    private var textureId: Int = 0
-    private var textures: IntArray = IntArray(1)
-    var surfaceTexture: SurfaceTexture? = null
-    private lateinit var cameraTexture: CameraTexture
-
-    private var preState = cameraHelper.isFront()
-
-//    lateinit var screenFilter: ScreenFilter
-
-    private val filters = mutableListOf<AbstractFilter>()
-
-    override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        Log.i("CameraRender", "onSurfaceCreated: ")
-        cameraTexture = CameraTexture()
-        surfaceTexture = cameraTexture.surfaceTexture
-        surfaceTexture?.attachToGLContext(textures[0])
-        surfaceTexture?.setOnFrameAvailableListener(this)
-
-        cameraHelper.addSurfaceTexture(surfaceTexture!!)
-//        cameraHelper.startPreview()
-//        screenFilter = ScreenFilter(glView.context, R.raw.camera_filters)
-        filters.forEach { it.init() }
-    }
-
-    override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-        GLES20.glViewport(0, 0, width, height)
-//        screenFilter.setSize(width, height)
-        filters.forEach {
-            Log.i("CameraRender", "onSurfaceChanged: $it")
-            it.setSize(width, height)
-        }
-    }
-
-    override fun onDrawFrame(gl: GL10?) {
-        if (this::cameraTexture.isInitialized) {
-            surfaceTexture?.updateTexImage()
-            if (preState == cameraHelper.isFront()) {
-                cameraTexture.draw(cameraHelper.isFront())
-            } else {
-                GLES20.glClearColor(0f, 0f, 0f, 0f)
-                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
-                preState = cameraHelper.isFront()
-            }
-            surfaceTexture?.getTransformMatrix(mtx)
-            var id = cameraTexture.textureId[0]
-            filters.forEach {
-                if (it is ScreenFilter) {
-                    it.setTransformMatrix(mtx)
-                }
-                if (it is AbstractFboFilter) {
-                    id = it.onDraw(id)
-                } else {
-                    it.onDraw(id)
-                }
-            }
-//            screenFilter.setTransformMatrix(mtx)
-//            screenFilter.onDraw(cameraTexture.textureId[0])
-        }
-    }
-
-    override fun onFrameAvailable(surfaceTexture: SurfaceTexture?) {
-        if (isBackState) return
-        glView.requestRender()
-    }
-
-    fun onResume() {
-        isBackState = false
-    }
-
-    fun onStop() {
-        isBackState = true
-    }
-
-    fun addFilter(filter: AbstractFilter) {
-        Log.i("CameraRender", "addFilter: ")
-//        this.screenFilter = screenFilter
-        filters.add(filter)
-    }
-
-    fun removeFilter(filter: AbstractFilter) {
-        filters.remove(filter)
     }
 }

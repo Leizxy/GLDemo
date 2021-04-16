@@ -1,4 +1,4 @@
-package cn.leizy.gldemo2.gl
+package cn.leizy.gldemo3.gl
 
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
@@ -31,6 +31,7 @@ object GLUtils {
                 GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
                 GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE
             )
+            Log.i("GLUtils", "getExternalGLTextureID: ${it[0]}")
         }
     }
 

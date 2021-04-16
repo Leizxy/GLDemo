@@ -1,3 +1,4 @@
+include ':gldemo3'
 include ':gldemo2'
 include ':demo'
 include ':app'

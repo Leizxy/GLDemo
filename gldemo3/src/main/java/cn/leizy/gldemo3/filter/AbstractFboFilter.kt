@@ -1,9 +1,9 @@
-package cn.leizy.gldemo2.gl.filter
+package cn.leizy.gldemo3.filter
 
 import android.content.Context
 import android.opengl.GLES20
 import android.util.Log
-import cn.leizy.gldemo2.gl.GLUtils
+import cn.leizy.gldemo3.gl.GLUtils
 
 /**
  * @author Created by wulei
@@ -20,13 +20,16 @@ abstract class AbstractFboFilter(context: Context, vertexShaderId: Int, fragment
         releaseFrame()
         frameBuffer = IntArray(1)
         GLES20.glGenFramebuffers(1, frameBuffer, 0)
+        Log.i("AbstractFboFilter", "setSize: ${frameBuffer!![0]}")
         //生成纹理
-        frameTextures = GLUtils.getExternalGLTextureID()
-//        frameTextures = IntArray(1)
-//        GLES20.glGenTextures(frameTextures!!.size, frameTextures, 0)
+//        frameTextures = GLUtils.getExternalGLTextureID()
+        frameTextures = IntArray(1)
+        GLES20.glGenTextures(frameTextures!!.size, frameTextures, 0)
         //配置纹理
+        Log.i("AbstractFboFilter", "setSize: ${frameTextures!![0]}")
         for (i in frameTextures!!.indices) {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, frameTextures!![i])
+            Log.i("AbstractFboFilter", "${javaClass.simpleName} setSize: for $i")
             GLES20.glTexParameteri(
                 GLES20.GL_TEXTURE_2D,
                 GLES20.GL_TEXTURE_MAG_FILTER,
@@ -41,16 +44,6 @@ abstract class AbstractFboFilter(context: Context, vertexShaderId: Int, fragment
         }
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, frameTextures!![0])
         Log.i("AbstractFboFilter", "setSize: ${frameTextures!![0]}")
-        //绑定FBO
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuffer!![0])
-        //绑定FBO和纹理
-        GLES20.glFramebufferTexture2D(
-            GLES20.GL_FRAMEBUFFER,
-            GLES20.GL_COLOR_ATTACHMENT0,
-            GLES20.GL_TEXTURE_2D,
-            frameTextures!![0],
-            0
-        )
         GLES20.glTexImage2D(
             GLES20.GL_TEXTURE_2D,
             0,
@@ -61,6 +54,16 @@ abstract class AbstractFboFilter(context: Context, vertexShaderId: Int, fragment
             GLES20.GL_RGBA,
             GLES20.GL_UNSIGNED_BYTE,
             null
+        )
+        //绑定FBO
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuffer!![0])
+        //绑定FBO和纹理
+        GLES20.glFramebufferTexture2D(
+            GLES20.GL_FRAMEBUFFER,
+            GLES20.GL_COLOR_ATTACHMENT0,
+            GLES20.GL_TEXTURE_2D,
+            frameTextures!![0],
+            0
         )
         if (GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER) != GLES20.GL_FRAMEBUFFER_COMPLETE) {
             Log.i("AbstractFboFilter", "setSize: glFramebufferTexture2D error!")
