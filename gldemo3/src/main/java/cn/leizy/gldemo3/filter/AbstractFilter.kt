@@ -113,7 +113,6 @@ abstract class AbstractFilter(
     }
 
     open fun beforeDraw(texture: Int) {
-
     }
 
     fun release() {

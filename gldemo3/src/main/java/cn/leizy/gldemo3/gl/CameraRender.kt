@@ -13,7 +13,7 @@ import javax.microedition.khronos.opengles.GL10
 /**
  * @author Created by wulei
  * @date 2021/4/15, 015
- * @description
+ * @description 废弃
  */
 class CameraRender(private val cameraView: CameraView, private val surface: Surface) :
     GLSurfaceView.Renderer,

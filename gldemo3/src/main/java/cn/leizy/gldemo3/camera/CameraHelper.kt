@@ -27,7 +27,7 @@ import kotlin.coroutines.suspendCoroutine
 /**
  * @author wulei
  * @date 4/10/21
- * @description
+ * @description 封装的渲染相机数据到SurfaceTexture上的类。
  */
 data class CameraInfo(val cameraId: String, val size: Size, val isFront: Boolean)
 

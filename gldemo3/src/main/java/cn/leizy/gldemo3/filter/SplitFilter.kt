@@ -9,10 +9,9 @@ import cn.leizy.gldemo3.R
  * @description
  */
 class SplitFilter(context: Context) :
-    AbstractFilter(context, R.raw.base_vert, R.raw.split2_screen) {
-/*
+    AbstractFboFilter(context, R.raw.base_vert, R.raw.split2_screen) {
     override fun onDraw(texture: Int): Int {
         super.onDraw(texture)
         return frameTextures!![0]
-    }*/
+    }
 }
