@@ -5,10 +5,7 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.view.Surface
 import cn.leizy.gldemo3.camera.CameraHelper
-import cn.leizy.gldemo3.filter.CameraFilter
-import cn.leizy.gldemo3.filter.RecordFilter
-import cn.leizy.gldemo3.filter.SplitFilter
-import cn.leizy.gldemo3.filter.TextFilter
+import cn.leizy.gldemo3.filter.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -21,6 +18,7 @@ class CameraRender2(private val cameraView: CameraView, private val surface: Sur
     GLSurfaceView.Renderer,
     SurfaceTexture.OnFrameAvailableListener {
     private lateinit var surfaceTexture: SurfaceTexture
+
     //    private lateinit var cameraTexture: CameraTexture
     private var cameraHelper: CameraHelper
 
@@ -31,6 +29,7 @@ class CameraRender2(private val cameraView: CameraView, private val surface: Sur
     private lateinit var cameraFilter: CameraFilter
     private lateinit var splitFilter: SplitFilter
     private lateinit var textFilter: TextFilter
+    private lateinit var bitmapFilter: BitmapFilter
 
     init {
         cameraHelper = CameraHelper(cameraView)
@@ -64,13 +63,16 @@ class CameraRender2(private val cameraView: CameraView, private val surface: Sur
         recordFilter.init()
 //        textFilter = TextFilter(cameraView.context)
 //        textFilter.init()
+        bitmapFilter = BitmapFilter(cameraView.context)
+        bitmapFilter.init()
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
         cameraFilter.setSize(width, height)
         splitFilter.setSize(width, height)
-        recordFilter.setSize(width,height)
+        recordFilter.setSize(width, height)
+        bitmapFilter.setSize(width, height)
 //        textFilter.setText("hahah")
     }
 
@@ -82,8 +84,9 @@ class CameraRender2(private val cameraView: CameraView, private val surface: Sur
 //            textFilter.setTransformMatrix(mtx)
             var id = textures[0]
             id = cameraFilter.onDraw(id)
-            id = splitFilter.onDraw(id)
+//            id = splitFilter.onDraw(id)
 //            id = textFilter.onDraw(id)
+            id = bitmapFilter.onDraw(id)
             id = recordFilter.onDraw(id)
         }
     }

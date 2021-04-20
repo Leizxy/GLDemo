@@ -12,21 +12,21 @@ import cn.leizy.gldemo3.gl.GLUtils
  */
 abstract class AbstractFboFilter(context: Context, vertexShaderId: Int, fragmentShaderId: Int) :
     AbstractFilter(context, vertexShaderId, fragmentShaderId) {
-    private var frameBuffer: IntArray? = null
-    var frameTextures: IntArray? = null
+    protected var frameBuffer: IntArray? = null
+    protected var frameTextures: IntArray? = null
 
     override fun setSize(width: Int, height: Int) {
         super.setSize(width, height)
         releaseFrame()
         frameBuffer = IntArray(1)
         GLES20.glGenFramebuffers(1, frameBuffer, 0)
-        Log.i("AbstractFboFilter", "setSize: ${frameBuffer!![0]}")
+        Log.i("AbstractFboFilter", "${javaClass.simpleName} setSize: $width,$height frameBuffer ${frameBuffer!![0]}")
         //生成纹理
 //        frameTextures = GLUtils.getExternalGLTextureID()
         frameTextures = IntArray(1)
         GLES20.glGenTextures(frameTextures!!.size, frameTextures, 0)
         //配置纹理
-        Log.i("AbstractFboFilter", "setSize: ${frameTextures!![0]}")
+        Log.i("AbstractFboFilter", "${javaClass.simpleName} setSize: frameTextures ${frameTextures!![0]}")
         for (i in frameTextures!!.indices) {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, frameTextures!![i])
             Log.i("AbstractFboFilter", "${javaClass.simpleName} setSize: for $i")
@@ -43,7 +43,7 @@ abstract class AbstractFboFilter(context: Context, vertexShaderId: Int, fragment
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
         }
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, frameTextures!![0])
-        Log.i("AbstractFboFilter", "setSize: ${frameTextures!![0]}")
+        Log.i("AbstractFboFilter", "${javaClass.simpleName} setSize: ${frameTextures!![0]}")
         GLES20.glTexImage2D(
             GLES20.GL_TEXTURE_2D,
             0,
@@ -66,7 +66,7 @@ abstract class AbstractFboFilter(context: Context, vertexShaderId: Int, fragment
             0
         )
         if (GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER) != GLES20.GL_FRAMEBUFFER_COMPLETE) {
-            Log.i("AbstractFboFilter", "setSize: glFramebufferTexture2D error!")
+            Log.i("AbstractFboFilter", "${javaClass.simpleName} setSize: glFramebufferTexture2D error!")
         }
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)

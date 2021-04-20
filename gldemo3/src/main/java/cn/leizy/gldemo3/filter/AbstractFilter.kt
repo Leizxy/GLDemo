@@ -23,9 +23,10 @@ abstract class AbstractFilter(
 ) {
     var mWidth: Int = 0
     var mHeight: Int = 0
-    val vertexBuffer: FloatBuffer
+    var vertexBuffer: FloatBuffer
     val textureBuffer: FloatBuffer
-    private val VERTEX = floatArrayOf(
+
+    /*private val VERTEX = floatArrayOf(
         -1.0f, -1.0f,
         1.0f, -1.0f,
         -1.0f, 1.0f,
@@ -36,7 +37,32 @@ abstract class AbstractFilter(
         1.0f, 0.0f,
         0.0f, 1.0f,
         1.0f, 1.0f
-    )
+    )*/
+    protected val vertex: FloatArray by lazy {
+        getVertexCoord()
+    }
+
+    open fun getVertexCoord(): FloatArray {
+        return floatArrayOf(
+            -1.0f, -1.0f,
+            1.0f, -1.0f,
+            -1.0f, 1.0f,
+            1.0f, 1.0f
+        )
+    }
+
+    protected val texture: FloatArray by lazy {
+        getTextureCoord()
+    }
+
+    open fun getTextureCoord(): FloatArray {
+        return floatArrayOf(
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            0.0f, 1.0f,
+            1.0f, 1.0f
+        )
+    }
 
     var program: Int = 0
     var vPosition: Int = 0
@@ -44,20 +70,27 @@ abstract class AbstractFilter(
     var vTexture: Int = 0
 
     init {
-        Log.i("AbstractFilter", "init{}")
-        ByteBuffer.allocateDirect(4 * 4 * 2)
+        beforeInit(context)
+        ByteBuffer.allocateDirect(vertex.size * 4)
             .order(ByteOrder.nativeOrder()).asFloatBuffer().also {
                 it.clear()
-                it.put(VERTEX)
+                it.put(vertex)
                 vertexBuffer = it
+                vertexBuffer.position(0)
             }
-        ByteBuffer.allocateDirect(4 * 4 * 2)
+        ByteBuffer.allocateDirect(texture.size * 4)
             .order(ByteOrder.nativeOrder()).asFloatBuffer().also {
                 it.clear()
-                it.put(TEXTURE)
+                it.put(texture)
                 textureBuffer = it
+                textureBuffer.position(0)
             }
+        Log.i("AbstractFilter", "init{${javaClass.simpleName}}")
 //        init()
+    }
+
+    open fun beforeInit(context: Context) {
+
     }
 
     fun init() {
@@ -78,13 +111,13 @@ abstract class AbstractFilter(
     open fun setSize(width: Int, height: Int) {
         mWidth = width
         mHeight = height
+        GLES20.glViewport(0, 0, mWidth, mHeight)
     }
 
     //渲染
     open fun onDraw(texture: Int): Int {
 //        if (program == 0) return 0
         //大小
-        GLES20.glViewport(0, 0, mWidth, mHeight)
         //使用程序
         GLES20.glUseProgram(program)
         //从0的地方开始读

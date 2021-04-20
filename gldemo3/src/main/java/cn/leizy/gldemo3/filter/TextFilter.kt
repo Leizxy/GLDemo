@@ -18,12 +18,13 @@ class TextFilter(context: Context) :
     private var vMatrix: Int = 0
     private lateinit var mtx: FloatArray
 
+
     override fun initGLParams() {
         G20.glEnable(G20.GL_BLEND)
         G20.glPixelStorei(G20.GL_UNPACK_ALIGNMENT, 1)
         G20.glBlendFunc(G20.GL_NONE, G20.GL_ONE_MINUS_SRC_ALPHA)
         super.initGLParams()
-        vMatrix = G20.glGetUniformLocation(program, "vMatrix")
+//        vMatrix = G20.glGetUniformLocation(program, "vMatrix")
     }
 
     fun setText(str: String) {
@@ -46,7 +47,12 @@ class TextFilter(context: Context) :
         val canvas = Canvas(bitmap!!)
         canvas.drawText(str, 0f, (-metrics.ascent).toFloat(), paint)
         canvas.save()
-        setSize(width, height)
+//        setSize(width, height)
+    }
+
+    override fun setSize(width: Int, height: Int) {
+        super.setSize(width, height)
+
     }
 
 
